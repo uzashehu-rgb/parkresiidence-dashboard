@@ -207,11 +207,6 @@ function BuildingGroup({
           />
         );
       })}
-      {/* Building label */}
-      <mesh position={[0, -0.05, buildingD / 2 + 0.05]}>
-        <planeGeometry args={[0.6, 0.18]} />
-        <meshBasicMaterial color="#1C1C1C" />
-      </mesh>
     </group>
   );
 }
