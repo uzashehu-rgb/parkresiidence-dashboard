@@ -6,6 +6,11 @@ import { ApartmentCard } from "@/components/apartment-card";
 import { ApartmentDetailModal } from "@/components/apartment-detail-modal";
 import { useFilteredApartments } from "@/hooks/use-filtered-apartments";
 import { ApartmentFilters } from "@/components/apartment-filters";
+import { AmenitiesSection } from "@/components/amenities-section";
+import { TimelineSection } from "@/components/timeline-section";
+import { PressSection } from "@/components/press-section";
+import { FaqSection } from "@/components/faq-section";
+import { PhilosophySection } from "@/components/philosophy-section";
 import exterior from "@/assets/exterior-1.jpg";
 import landscape from "@/assets/landscape-1.jpg";
 import interior from "@/assets/interior-1.jpg";
@@ -47,8 +52,13 @@ function HomePage() {
         onSelect={setSelected}
       />
       <FeaturedSection onSelect={setSelected} />
+      <PhilosophySection />
       <AboutSection />
+      <AmenitiesSection />
+      <TimelineSection />
       <GalleryStrip />
+      <PressSection />
+      <FaqSection />
       <ContactCta />
       <ApartmentDetailModal
         apartment={selected}
