@@ -73,7 +73,7 @@ function RootComponent() {
   return (
     <>
       <SiteHeader />
-      <main className="pt-24">
+      <main className="pt-28 md:pt-32">
         <Outlet />
       </main>
       <SiteFooter />
