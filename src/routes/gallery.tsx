@@ -4,9 +4,15 @@ import interior from "@/assets/interior-1.jpg";
 import landscape from "@/assets/landscape-1.jpg";
 import balcony from "@/assets/balcony-1.jpg";
 import lobby from "@/assets/lobby-1.jpg";
+import { siteConfig } from "@/lib/site";
 
 const IMAGES = [
-  { src: exterior, alt: "Exterior facade", category: "Architecture", span: "md:col-span-8 md:row-span-2" },
+  {
+    src: exterior,
+    alt: "Exterior facade",
+    category: "Architecture",
+    span: "md:col-span-8 md:row-span-2",
+  },
   { src: balcony, alt: "Private balcony", category: "Detail", span: "md:col-span-4" },
   { src: interior, alt: "Living room", category: "Interior", span: "md:col-span-4" },
   { src: landscape, alt: "Landscape garden", category: "Surroundings", span: "md:col-span-6" },
@@ -16,10 +22,13 @@ const IMAGES = [
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Gallery — Aethelgard" },
-      { name: "description", content: "Architectural renders, interiors, surroundings and lifestyle visuals from Aethelgard Park Residence." },
-      { property: "og:title", content: "Gallery — Aethelgard" },
-      { property: "og:description", content: "A visual archive of Aethelgard." },
+      { title: `Gallery - ${siteConfig.name}` },
+      {
+        name: "description",
+        content: `Architectural renders, interiors, surroundings and lifestyle visuals from ${siteConfig.name}.`,
+      },
+      { property: "og:title", content: `Gallery - ${siteConfig.name}` },
+      { property: "og:description", content: `A visual archive of ${siteConfig.name}.` },
     ],
   }),
   component: GalleryPage,

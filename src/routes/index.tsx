@@ -14,6 +14,7 @@ import { PhilosophySection } from "@/components/philosophy-section";
 import exterior from "@/assets/exterior-1.jpg";
 import landscape from "@/assets/landscape-1.jpg";
 import interior from "@/assets/interior-1.jpg";
+import { siteConfig } from "@/lib/site";
 
 const BuildingViewer = lazy(() =>
   import("@/components/building-viewer").then((m) => ({ default: m.BuildingViewer })),
@@ -22,16 +23,16 @@ const BuildingViewer = lazy(() =>
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aethelgard — Find your apartment in a new dimension" },
+      { title: `${siteConfig.name} - Find your apartment in a new dimension` },
       {
         name: "description",
-        content:
-          "Explore an interactive 3D model of Aethelgard Park Residence. Eighteen private apartments, real-time availability, refined architecture.",
+        content: `Explore an interactive 3D model of ${siteConfig.name}. Eighteen private apartments, real-time availability, refined architecture.`,
       },
-      { property: "og:title", content: "Aethelgard — Park Residence" },
+      { property: "og:title", content: siteConfig.name },
       {
         property: "og:description",
-        content: "Interactive 3D apartment selection. Eighteen private residences in landscaped parkland.",
+        content:
+          "Interactive 3D apartment selection. Eighteen private residences in landscaped parkland.",
       },
     ],
   }),
@@ -87,8 +88,8 @@ function Hero({
               A monolith of <em className="italic">sculptural light</em>
             </h2>
             <p className="text-sm text-graphite/65 leading-relaxed max-w-[32ch]">
-              Designed as a singular piece of structural art. Two volumes, eighteen
-              residences, set within 1.4 hectares of mature parkland.
+              Designed as a singular piece of structural art. Two volumes, eighteen residences, set
+              within 1.4 hectares of mature parkland.
             </p>
           </div>
           <div className="space-y-4 pt-8 border-t border-graphite/10">
@@ -195,15 +196,12 @@ function ExplorerSection({
             </h2>
           </div>
           <p className="col-span-12 md:col-span-5 text-graphite/65 text-sm md:text-base leading-relaxed md:text-right">
-            Filter by orientation, area or floor. The 3D model above updates live with your selection.
+            Filter by orientation, area or floor. The 3D model above updates live with your
+            selection.
           </p>
         </div>
 
-        <ApartmentFilters
-          filters={filters}
-          onChange={setFilters}
-          resultCount={filtered.length}
-        />
+        <ApartmentFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
           {filtered.slice(0, 9).map((a) => (
@@ -256,7 +254,7 @@ function AboutSection() {
         <div className="col-span-12 md:col-span-6">
           <img
             src={exterior}
-            alt="Aethelgard exterior"
+            alt={`${siteConfig.name} exterior`}
             width={1600}
             height={1100}
             loading="lazy"
@@ -269,13 +267,15 @@ function AboutSection() {
             Architecture as <em className="italic">an act of restraint.</em>
           </h2>
           <p className="text-graphite/70 leading-relaxed">
-            Two sculptural volumes in warm white render frame a private courtyard of
-            mature lindens and reflective water. Every line, every material was chosen
-            to age slowly and beautifully — travertine, hand-rubbed brass, and European
-            oak.
+            Two sculptural volumes in warm white render frame a private courtyard of mature lindens
+            and reflective water. Every line, every material was chosen to age slowly and
+            beautifully — travertine, hand-rubbed brass, and European oak.
           </p>
           <div className="grid grid-cols-2 gap-y-8 gap-x-12 pt-6 border-t border-graphite/10">
-            <Editorial value={String(projectStats.buildings).padStart(2, "0")} label="Architectural volumes" />
+            <Editorial
+              value={String(projectStats.buildings).padStart(2, "0")}
+              label="Architectural volumes"
+            />
             <Editorial value={String(projectStats.units)} label="Private residences" />
             <Editorial value={projectStats.greenSpaces} label="Landscaped parkland" />
             <Editorial value={String(projectStats.parking)} label="Underground spaces" />
@@ -303,13 +303,28 @@ function GalleryStrip() {
           </h2>
         </div>
         <div className="grid grid-cols-12 gap-4">
-          <img src={interior} alt="Interior" loading="lazy" width={1400} height={1000}
-               className="col-span-12 md:col-span-7 w-full h-[420px] object-cover rounded-xl" />
-          <img src={landscape} alt="Landscape" loading="lazy" width={1400} height={1000}
-               className="col-span-12 md:col-span-5 w-full h-[420px] object-cover rounded-xl" />
+          <img
+            src={interior}
+            alt="Interior"
+            loading="lazy"
+            width={1400}
+            height={1000}
+            className="col-span-12 md:col-span-7 w-full h-[420px] object-cover rounded-xl"
+          />
+          <img
+            src={landscape}
+            alt="Landscape"
+            loading="lazy"
+            width={1400}
+            height={1000}
+            className="col-span-12 md:col-span-5 w-full h-[420px] object-cover rounded-xl"
+          />
         </div>
         <div className="text-center mt-12">
-          <Link to="/gallery" className="eyebrow text-brass border-b border-brass/40 pb-1 hover:border-brass">
+          <Link
+            to="/gallery"
+            className="eyebrow text-brass border-b border-brass/40 pb-1 hover:border-brass"
+          >
             Browse the full gallery →
           </Link>
         </div>
@@ -327,8 +342,8 @@ function ContactCta() {
           Walk the residences <em className="italic">in person.</em>
         </h2>
         <p className="text-graphite/65 mt-6 leading-relaxed max-w-xl mx-auto">
-          Visits are arranged privately, by appointment, with a senior member of the
-          sales team. We answer in under one business day.
+          Visits are arranged privately, by appointment, with a senior member of the sales team. We
+          answer in under one business day.
         </p>
         <Link
           to="/contact"

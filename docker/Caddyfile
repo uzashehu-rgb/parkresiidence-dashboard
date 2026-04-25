@@ -1,0 +1,8 @@
+:80 {
+  encode gzip zstd
+
+  reverse_proxy /api/* api:8787
+  reverse_proxy /uploads/* api:8787
+  reverse_proxy web:3000
+}
+

@@ -1,0 +1,19 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV API_HOST=0.0.0.0
+ENV API_PORT=8787
+ENV UPLOAD_DIR=/app/storage/uploads
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server ./server
+COPY storage ./storage
+
+EXPOSE 8787
+
+CMD ["npm", "run", "start:api"]
+

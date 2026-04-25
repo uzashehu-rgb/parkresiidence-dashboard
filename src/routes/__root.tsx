@@ -1,9 +1,16 @@
-import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  Outlet,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+  useRouterState,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Link } from "@tanstack/react-router";
+import { siteConfig } from "@/lib/site";
 
 function NotFoundComponent() {
   return (
@@ -30,13 +37,13 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Aethelgard — Park Residence" },
+      { title: siteConfig.name },
       {
         name: "description",
-        content:
-          "A private collection of eighteen residences set within landscaped parkland. Find your apartment in a new dimension.",
+        content: siteConfig.description,
       },
-      { property: "og:title", content: "Aethelgard — Park Residence" },
+      { property: "og:title", content: siteConfig.name },
+      { property: "og:description", content: siteConfig.description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -70,13 +77,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isDashboard = pathname.startsWith("/dashboard");
+
   return (
     <>
-      <SiteHeader />
-      <main className="pt-28 md:pt-32">
+      {!isDashboard && <SiteHeader />}
+      <main className={isDashboard ? "" : "pt-28 md:pt-32"}>
         <Outlet />
       </main>
-      <SiteFooter />
+      {!isDashboard && <SiteFooter />}
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { siteConfig } from "@/lib/site";
 
 const PLACES = [
   { name: "Linden Park", distance: "0 m", category: "Adjacent" },
@@ -12,10 +13,17 @@ const PLACES = [
 export const Route = createFileRoute("/location")({
   head: () => ({
     meta: [
-      { title: "Location — Aethelgard" },
-      { name: "description", content: "Adjacent to Linden Park, with quick access to the city centre, schools, and culture." },
-      { property: "og:title", content: "Location — Aethelgard" },
-      { property: "og:description", content: "Where Aethelgard sits, and what surrounds it." },
+      { title: `Location - ${siteConfig.name}` },
+      {
+        name: "description",
+        content:
+          "Adjacent to Linden Park, with quick access to the city centre, schools, and culture.",
+      },
+      { property: "og:title", content: `Location - ${siteConfig.name}` },
+      {
+        property: "og:description",
+        content: `Where ${siteConfig.name} sits, and what surrounds it.`,
+      },
     ],
   }),
   component: LocationPage,
@@ -31,7 +39,8 @@ function LocationPage() {
             Where the city <em className="italic">meets the park.</em>
           </h1>
           <p className="text-graphite/65 mt-6 max-w-xl mx-auto leading-relaxed">
-            Aethelgard sits on the northern edge of Linden Park, eight minutes from the city centre.
+            {siteConfig.name} sits on the northern edge of Linden Park, eight minutes from the city
+            centre.
           </p>
         </div>
 
@@ -41,7 +50,12 @@ function LocationPage() {
             <svg viewBox="0 0 800 600" className="absolute inset-0 w-full h-full">
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="oklch(0.22 0.004 60 / 0.06)" strokeWidth="1" />
+                  <path
+                    d="M 40 0 L 0 0 0 40"
+                    fill="none"
+                    stroke="oklch(0.22 0.004 60 / 0.06)"
+                    strokeWidth="1"
+                  />
                 </pattern>
               </defs>
               <rect width="800" height="600" fill="url(#grid)" />
@@ -49,21 +63,59 @@ function LocationPage() {
               <ellipse cx="350" cy="320" rx="220" ry="160" fill="oklch(0.48 0.025 145 / 0.25)" />
               <ellipse cx="350" cy="320" rx="180" ry="120" fill="oklch(0.48 0.025 145 / 0.35)" />
               {/* Roads */}
-              <path d="M 0 200 Q 400 240 800 180" stroke="oklch(0.22 0.004 60 / 0.18)" strokeWidth="14" fill="none" />
-              <path d="M 0 460 Q 400 420 800 480" stroke="oklch(0.22 0.004 60 / 0.18)" strokeWidth="14" fill="none" />
-              <path d="M 600 0 L 620 600" stroke="oklch(0.22 0.004 60 / 0.18)" strokeWidth="14" fill="none" />
-              {/* Aethelgard pin */}
+              <path
+                d="M 0 200 Q 400 240 800 180"
+                stroke="oklch(0.22 0.004 60 / 0.18)"
+                strokeWidth="14"
+                fill="none"
+              />
+              <path
+                d="M 0 460 Q 400 420 800 480"
+                stroke="oklch(0.22 0.004 60 / 0.18)"
+                strokeWidth="14"
+                fill="none"
+              />
+              <path
+                d="M 600 0 L 620 600"
+                stroke="oklch(0.22 0.004 60 / 0.18)"
+                strokeWidth="14"
+                fill="none"
+              />
+              {/* Project pin */}
               <g transform="translate(440, 200)">
                 <circle r="38" fill="oklch(0.72 0.06 75 / 0.15)" />
                 <circle r="20" fill="oklch(0.72 0.06 75 / 0.3)" />
                 <circle r="9" fill="oklch(0.72 0.06 75)" />
                 <circle r="9" fill="oklch(0.72 0.06 75)">
                   <animate attributeName="r" values="9;18;9" dur="2.4s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.8;0;0.8" dur="2.4s" repeatCount="indefinite" />
+                  <animate
+                    attributeName="opacity"
+                    values="0.8;0;0.8"
+                    dur="2.4s"
+                    repeatCount="indefinite"
+                  />
                 </circle>
               </g>
-              <text x="490" y="195" fontFamily="Cormorant Garamond" fontSize="22" fill="oklch(0.22 0.004 60)" fontStyle="italic">Aethelgard</text>
-              <text x="370" y="320" fontFamily="Cormorant Garamond" fontSize="18" fill="oklch(0.48 0.025 145)" textAnchor="middle">Linden Park</text>
+              <text
+                x="490"
+                y="195"
+                fontFamily="Cormorant Garamond"
+                fontSize="22"
+                fill="oklch(0.22 0.004 60)"
+                fontStyle="italic"
+              >
+                {siteConfig.name}
+              </text>
+              <text
+                x="370"
+                y="320"
+                fontFamily="Cormorant Garamond"
+                fontSize="18"
+                fill="oklch(0.48 0.025 145)"
+                textAnchor="middle"
+              >
+                Linden Park
+              </text>
             </svg>
           </div>
 

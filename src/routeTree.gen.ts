@@ -12,9 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResidencesRouteImport } from './routes/residences'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardProgressRouteImport } from './routes/dashboard.progress'
+import { Route as DashboardPaymentsRouteImport } from './routes/dashboard.payments'
+import { Route as DashboardInvoicesRouteImport } from './routes/dashboard.invoices'
+import { Route as DashboardClientsRouteImport } from './routes/dashboard.clients'
+import { Route as DashboardChartsRouteImport } from './routes/dashboard.charts'
+import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
+import { Route as DashboardApartmentsRouteImport } from './routes/dashboard.apartments'
 
 const ResidencesRoute = ResidencesRouteImport.update({
   id: '/residences',
@@ -29,6 +38,11 @@ const LocationRoute = LocationRouteImport.update({
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -46,14 +60,63 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProgressRoute = DashboardProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPaymentsRoute = DashboardPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInvoicesRoute = DashboardInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardClientsRoute = DashboardClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardChartsRoute = DashboardChartsRouteImport.update({
+  id: '/charts',
+  path: '/charts',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAuditRoute = DashboardAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardApartmentsRoute = DashboardApartmentsRouteImport.update({
+  id: '/apartments',
+  path: '/apartments',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
   '/residences': typeof ResidencesRoute
+  '/dashboard/apartments': typeof DashboardApartmentsRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/charts': typeof DashboardChartsRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,15 +125,32 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
   '/residences': typeof ResidencesRoute
+  '/dashboard/apartments': typeof DashboardApartmentsRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/charts': typeof DashboardChartsRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
   '/residences': typeof ResidencesRoute
+  '/dashboard/apartments': typeof DashboardApartmentsRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/charts': typeof DashboardChartsRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -78,25 +158,58 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/contact'
+    | '/dashboard'
     | '/gallery'
     | '/location'
     | '/residences'
+    | '/dashboard/apartments'
+    | '/dashboard/audit'
+    | '/dashboard/charts'
+    | '/dashboard/clients'
+    | '/dashboard/invoices'
+    | '/dashboard/payments'
+    | '/dashboard/progress'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/contact' | '/gallery' | '/location' | '/residences'
-  id:
-    | '__root__'
+  to:
     | '/'
     | '/about'
     | '/contact'
     | '/gallery'
     | '/location'
     | '/residences'
+    | '/dashboard/apartments'
+    | '/dashboard/audit'
+    | '/dashboard/charts'
+    | '/dashboard/clients'
+    | '/dashboard/invoices'
+    | '/dashboard/payments'
+    | '/dashboard/progress'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/contact'
+    | '/dashboard'
+    | '/gallery'
+    | '/location'
+    | '/residences'
+    | '/dashboard/apartments'
+    | '/dashboard/audit'
+    | '/dashboard/charts'
+    | '/dashboard/clients'
+    | '/dashboard/invoices'
+    | '/dashboard/payments'
+    | '/dashboard/progress'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   ContactRoute: typeof ContactRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   GalleryRoute: typeof GalleryRoute
   LocationRoute: typeof LocationRoute
   ResidencesRoute: typeof ResidencesRoute
@@ -125,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -146,13 +266,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/progress': {
+      id: '/dashboard/progress'
+      path: '/progress'
+      fullPath: '/dashboard/progress'
+      preLoaderRoute: typeof DashboardProgressRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/payments': {
+      id: '/dashboard/payments'
+      path: '/payments'
+      fullPath: '/dashboard/payments'
+      preLoaderRoute: typeof DashboardPaymentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/invoices': {
+      id: '/dashboard/invoices'
+      path: '/invoices'
+      fullPath: '/dashboard/invoices'
+      preLoaderRoute: typeof DashboardInvoicesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/clients': {
+      id: '/dashboard/clients'
+      path: '/clients'
+      fullPath: '/dashboard/clients'
+      preLoaderRoute: typeof DashboardClientsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/charts': {
+      id: '/dashboard/charts'
+      path: '/charts'
+      fullPath: '/dashboard/charts'
+      preLoaderRoute: typeof DashboardChartsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/audit': {
+      id: '/dashboard/audit'
+      path: '/audit'
+      fullPath: '/dashboard/audit'
+      preLoaderRoute: typeof DashboardAuditRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/apartments': {
+      id: '/dashboard/apartments'
+      path: '/apartments'
+      fullPath: '/dashboard/apartments'
+      preLoaderRoute: typeof DashboardApartmentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
+
+interface DashboardRouteChildren {
+  DashboardApartmentsRoute: typeof DashboardApartmentsRoute
+  DashboardAuditRoute: typeof DashboardAuditRoute
+  DashboardChartsRoute: typeof DashboardChartsRoute
+  DashboardClientsRoute: typeof DashboardClientsRoute
+  DashboardInvoicesRoute: typeof DashboardInvoicesRoute
+  DashboardPaymentsRoute: typeof DashboardPaymentsRoute
+  DashboardProgressRoute: typeof DashboardProgressRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardApartmentsRoute: DashboardApartmentsRoute,
+  DashboardAuditRoute: DashboardAuditRoute,
+  DashboardChartsRoute: DashboardChartsRoute,
+  DashboardClientsRoute: DashboardClientsRoute,
+  DashboardInvoicesRoute: DashboardInvoicesRoute,
+  DashboardPaymentsRoute: DashboardPaymentsRoute,
+  DashboardProgressRoute: DashboardProgressRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ContactRoute: ContactRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   GalleryRoute: GalleryRoute,
   LocationRoute: LocationRoute,
   ResidencesRoute: ResidencesRoute,
@@ -160,3 +363,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

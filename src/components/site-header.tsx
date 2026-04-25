@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { siteConfig } from "@/lib/site";
 
 const links = [
   { to: "/residences", label: "Residences" },
   { to: "/about", label: "Architecture" },
   { to: "/gallery", label: "Gallery" },
   { to: "/location", label: "Location" },
+  { to: "/dashboard", label: "Dashboard" },
 ] as const;
 
 export function SiteHeader() {
@@ -35,9 +37,9 @@ export function SiteHeader() {
                 scrolled ? "text-xl" : "text-2xl"
               }`}
             >
-              Aethelgard
+              {siteConfig.monogram}
             </span>
-            <span className="eyebrow text-graphite/60 mt-1">Park Residence</span>
+            <span className="eyebrow text-graphite/60 mt-1">{siteConfig.name}</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-10 xl:gap-14 text-[11px] uppercase tracking-[0.22em] font-medium text-graphite">
@@ -52,10 +54,7 @@ export function SiteHeader() {
               </Link>
             ))}
             <div className="h-6 w-px bg-graphite/15" />
-            <Link
-              to="/contact"
-              className="text-brass flex items-center gap-2 group"
-            >
+            <Link to="/contact" className="text-brass flex items-center gap-2 group">
               Inquire
               <span className="block size-1 rounded-full bg-brass group-hover:scale-150 transition-transform" />
             </Link>
@@ -72,9 +71,7 @@ export function SiteHeader() {
               }`}
             />
             <span
-              className={`block w-6 h-px bg-graphite transition-opacity ${
-                open ? "opacity-0" : ""
-              }`}
+              className={`block w-6 h-px bg-graphite transition-opacity ${open ? "opacity-0" : ""}`}
             />
             <span
               className={`block w-6 h-px bg-graphite transition-transform ${
@@ -91,7 +88,10 @@ export function SiteHeader() {
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="absolute inset-0 bg-canvas/95 backdrop-blur-xl" onClick={() => setOpen(false)} />
+        <div
+          className="absolute inset-0 bg-canvas/95 backdrop-blur-xl"
+          onClick={() => setOpen(false)}
+        />
         <nav className="relative h-full flex flex-col justify-center items-center gap-8 px-6">
           {[...links, { to: "/contact", label: "Inquire" }].map((l, i) => (
             <Link

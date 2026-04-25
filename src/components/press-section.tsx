@@ -1,7 +1,8 @@
+import { siteConfig } from "@/lib/site";
+
 const QUOTES = [
   {
-    quote:
-      "Aethelgard is a rare exercise in restraint — a building that trusts its residents to notice the details.",
+    quote: `${siteConfig.name} is a rare exercise in restraint - a building that trusts its residents to notice the details.`,
     author: "Architectural Review",
     role: "Editorial, March 2025",
   },
@@ -12,8 +13,7 @@ const QUOTES = [
     role: "Spring Issue 2025",
   },
   {
-    quote:
-      "We chose Aethelgard for the silence. It is the first apartment that has felt, immediately, like home.",
+    quote: `We chose ${siteConfig.name} for the silence. It is the first apartment that has felt, immediately, like home.`,
     author: "Mlle. Hartmann",
     role: "Resident, Building A",
   },
@@ -35,7 +35,13 @@ export function PressSection() {
               key={q.author}
               className="border border-canvas/10 rounded-2xl p-8 md:p-10 backdrop-blur-sm bg-canvas/[0.02]"
             >
-              <svg width="28" height="20" viewBox="0 0 28 20" className="text-brass mb-6" fill="currentColor">
+              <svg
+                width="28"
+                height="20"
+                viewBox="0 0 28 20"
+                className="text-brass mb-6"
+                fill="currentColor"
+              >
                 <path d="M0 20V12C0 5.5 4.5 0 11 0V4C7 4 4 7.5 4 12H8V20H0ZM16 20V12C16 5.5 20.5 0 27 0V4C23 4 20 7.5 20 12H24V20H16Z" />
               </svg>
               <blockquote className="font-serif text-xl md:text-2xl text-canvas leading-snug text-balance">

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
+import { siteConfig } from "@/lib/site";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(80),
@@ -12,9 +13,12 @@ const schema = z.object({
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Inquire — Aethelgard" },
-      { name: "description", content: "Schedule a private viewing or request a sales offer for Aethelgard Park Residence." },
-      { property: "og:title", content: "Inquire — Aethelgard" },
+      { title: `Inquire - ${siteConfig.name}` },
+      {
+        name: "description",
+        content: `Schedule a private viewing or request a sales offer for ${siteConfig.name}.`,
+      },
+      { property: "og:title", content: `Inquire - ${siteConfig.name}` },
       { property: "og:description", content: "Speak with a senior member of our sales team." },
     ],
   }),
@@ -57,10 +61,22 @@ function ContactPage() {
           </div>
 
           <div className="space-y-5 pt-8 border-t border-graphite/10">
-            <ContactRow label="Telephone" value="+33 1 42 00 00 00" href="tel:+33142000000" />
-            <ContactRow label="WhatsApp" value="Message us instantly" href="https://wa.me/33142000000" />
-            <ContactRow label="Email" value="sales@aethelgard.com" href="mailto:sales@aethelgard.com" />
-            <ContactRow label="Sales Office" value="22 rue des Lindens, by appointment" />
+            <ContactRow
+              label="Telephone"
+              value={siteConfig.contact.phoneDisplay}
+              href={`tel:${siteConfig.contact.phoneHref}`}
+            />
+            <ContactRow
+              label="WhatsApp"
+              value="Message us instantly"
+              href={siteConfig.contact.whatsappHref}
+            />
+            <ContactRow
+              label="Email"
+              value={siteConfig.contact.email}
+              href={`mailto:${siteConfig.contact.email}`}
+            />
+            <ContactRow label="Sales Office" value={siteConfig.contact.address} />
           </div>
         </div>
 
@@ -70,7 +86,13 @@ function ContactPage() {
               <div className="py-16 text-center">
                 <div className="size-16 mx-auto rounded-full bg-brass/15 flex items-center justify-center mb-6">
                   <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                    <path d="M5 11l4 4 8-8" stroke="oklch(0.72 0.06 75)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M5 11l4 4 8-8"
+                      stroke="oklch(0.72 0.06 75)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </div>
                 <h3 className="font-serif text-3xl text-graphite">Thank you</h3>
@@ -83,7 +105,12 @@ function ContactPage() {
                 <Input name="name" label="Full name" error={errors.name} required />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input name="email" label="Email" type="email" error={errors.email} required />
-                  <Input name="phone" label="Telephone (optional)" type="tel" error={errors.phone} />
+                  <Input
+                    name="phone"
+                    label="Telephone (optional)"
+                    type="tel"
+                    error={errors.phone}
+                  />
                 </div>
                 <div>
                   <label className="eyebrow text-graphite/50 block mb-2">Interest</label>
@@ -105,7 +132,9 @@ function ContactPage() {
                     className="w-full bg-canvas border border-graphite/15 rounded-md px-4 py-3 text-sm text-graphite focus:outline-none focus:border-brass resize-none"
                     maxLength={1000}
                   />
-                  {errors.message && <p className="text-xs text-destructive mt-1">{errors.message}</p>}
+                  {errors.message && (
+                    <p className="text-xs text-destructive mt-1">{errors.message}</p>
+                  )}
                 </div>
                 <button
                   type="submit"
@@ -154,11 +183,19 @@ function ContactRow({ label, value, href }: { label: string; value: string; href
   const Wrap = href ? "a" : "div";
   return (
     <Wrap
-      {...(href ? { href, target: href.startsWith("http") ? "_blank" : undefined, rel: "noopener noreferrer" } : {})}
+      {...(href
+        ? {
+            href,
+            target: href.startsWith("http") ? "_blank" : undefined,
+            rel: "noopener noreferrer",
+          }
+        : {})}
       className="flex justify-between items-baseline group"
     >
       <span className="eyebrow text-graphite/50">{label}</span>
-      <span className={`text-graphite text-sm ${href ? "group-hover:text-brass transition-colors" : ""}`}>
+      <span
+        className={`text-graphite text-sm ${href ? "group-hover:text-brass transition-colors" : ""}`}
+      >
         {value}
       </span>
     </Wrap>

@@ -1,0 +1,66 @@
+services:
+  proxy:
+    image: caddy:2-alpine
+    depends_on:
+      api:
+        condition: service_started
+      web:
+        condition: service_started
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_DASHBOARD_API_URL: /api
+    environment:
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: 3000
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8787
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-*}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-residence}:${POSTGRES_PASSWORD:-residence}@db:5432/${POSTGRES_DB:-residence_explorer}
+      PUBLIC_API_ORIGIN: ${PUBLIC_API_ORIGIN:-}
+      UPLOAD_DIR: /app/storage/uploads
+    restart: unless-stopped
+    volumes:
+      - uploads:/app/storage/uploads
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-residence_explorer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-residence}
+      POSTGRES_USER: ${POSTGRES_USER:-residence}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-residence} -d ${POSTGRES_DB:-residence_explorer}",
+        ]
+      interval: 5s
+      retries: 20
+      timeout: 3s
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  postgres_data:
+  uploads:

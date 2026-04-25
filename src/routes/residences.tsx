@@ -6,17 +6,18 @@ import { ApartmentTable } from "@/components/apartment-table";
 import { ApartmentDetailModal } from "@/components/apartment-detail-modal";
 import { useFilteredApartments } from "@/hooks/use-filtered-apartments";
 import { type Apartment } from "@/data/apartments";
+import { siteConfig } from "@/lib/site";
 
 export const Route = createFileRoute("/residences")({
   head: () => ({
     meta: [
-      { title: "Residences — Aethelgard" },
+      { title: `Residences - ${siteConfig.name}` },
       {
         name: "description",
         content:
           "Explore all eighteen private residences. Filter by floor, area, orientation, and price.",
       },
-      { property: "og:title", content: "The Residences — Aethelgard" },
+      { property: "og:title", content: `The Residences - ${siteConfig.name}` },
       {
         property: "og:description",
         content: "Eighteen residences set within landscaped parkland. Live availability.",

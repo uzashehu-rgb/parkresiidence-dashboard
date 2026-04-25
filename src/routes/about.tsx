@@ -3,20 +3,20 @@ import { projectStats } from "@/data/apartments";
 import exterior from "@/assets/exterior-1.jpg";
 import landscape from "@/assets/landscape-1.jpg";
 import interior from "@/assets/interior-1.jpg";
+import { siteConfig } from "@/lib/site";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "Architecture — Aethelgard" },
+      { title: `Architecture - ${siteConfig.name}` },
       {
         name: "description",
-        content:
-          "Two sculptural volumes in warm white render, set within 1.4 hectares of mature parkland. The architecture of Aethelgard.",
+        content: `Two sculptural volumes in warm white render, set within 1.4 hectares of mature parkland. The architecture of ${siteConfig.name}.`,
       },
-      { property: "og:title", content: "Architecture — Aethelgard" },
+      { property: "og:title", content: `Architecture - ${siteConfig.name}` },
       {
         property: "og:description",
-        content: "Restrained, material, slow architecture. Discover the design language of Aethelgard.",
+        content: `Restrained, material, slow architecture. Discover the design language of ${siteConfig.name}.`,
       },
     ],
   }),
@@ -33,9 +33,9 @@ function AboutPage() {
             <em className="italic">Restraint</em> as a form of luxury.
           </h1>
           <p className="text-graphite/65 mt-8 leading-relaxed max-w-2xl mx-auto">
-            Aethelgard is the work of a single architectural studio, a single landscape
-            designer, and a small circle of European makers. It is not a development.
-            It is a residence — singular, considered, slow.
+            {siteConfig.name} is the work of a single architectural studio, a single landscape
+            designer, and a small circle of European makers. It is not a development. It is a
+            residence — singular, considered, slow.
           </p>
         </div>
       </section>
@@ -44,7 +44,7 @@ function AboutPage() {
         <div className="mx-auto max-w-[1600px]">
           <img
             src={exterior}
-            alt="Aethelgard exterior"
+            alt={`${siteConfig.name} exterior`}
             width={1600}
             height={1100}
             loading="lazy"
@@ -85,10 +85,22 @@ function AboutPage() {
             </ul>
           </div>
           <div className="col-span-12 md:col-span-7 grid grid-cols-2 gap-4">
-            <img src={interior} alt="Interior" loading="lazy" width={1400} height={1000}
-                 className="w-full h-72 md:h-96 object-cover rounded-xl" />
-            <img src={landscape} alt="Landscape" loading="lazy" width={1400} height={1000}
-                 className="w-full h-72 md:h-96 object-cover rounded-xl mt-12" />
+            <img
+              src={interior}
+              alt="Interior"
+              loading="lazy"
+              width={1400}
+              height={1000}
+              className="w-full h-72 md:h-96 object-cover rounded-xl"
+            />
+            <img
+              src={landscape}
+              alt="Landscape"
+              loading="lazy"
+              width={1400}
+              height={1000}
+              className="w-full h-72 md:h-96 object-cover rounded-xl mt-12"
+            />
           </div>
         </div>
       </section>
@@ -99,7 +111,9 @@ function AboutPage() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center md:text-left">
-      <p className="font-serif text-5xl md:text-6xl text-graphite tabular-nums leading-none">{value}</p>
+      <p className="font-serif text-5xl md:text-6xl text-graphite tabular-nums leading-none">
+        {value}
+      </p>
       <p className="eyebrow text-graphite/50 mt-3">{label}</p>
     </div>
   );

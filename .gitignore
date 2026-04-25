@@ -15,6 +15,10 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.playwright-mcp/
+storage/uploads/*
+!storage/uploads/.gitkeep
 
 # Wrangler / Cloudflare
 .wrangler/
