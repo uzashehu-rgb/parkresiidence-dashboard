@@ -1,6 +1,46 @@
 export type ApartmentStatus = "available" | "reserved" | "sold";
 export type ApartmentLayoutShape = "standard" | "corner" | "studio" | "penthouse";
 export type PaymentScheduleStatus = "pending" | "paid" | "late";
+export type UserRole = "super_admin" | "sales";
+
+export type AuthUser = {
+  id: number;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type DashboardPermissions = {
+  canViewOverview: boolean;
+  canViewCharts: boolean;
+  canViewInvoices: boolean;
+  canViewApartments: boolean;
+  canCreateApartments: boolean;
+  canEditApartments: boolean;
+  canViewClients: boolean;
+  canViewPayments: boolean;
+  canViewProgress: boolean;
+  canViewAudit: boolean;
+  canManageUsers: boolean;
+};
+
+export type DashboardViewer = {
+  user: AuthUser;
+  permissions: DashboardPermissions;
+  allowedRoutes: string[];
+  homeRoute: string;
+};
+
+export type AuthSession = DashboardViewer & {
+  sessionToken: string;
+};
+
+export type ManagedUser = AuthUser & {
+  createdByName: string | null;
+};
 
 export type Project = {
   id: number;
@@ -129,6 +169,7 @@ export type DashboardAnalytics = {
 
 export type DashboardData = {
   project: Project;
+  viewer: DashboardViewer;
   categories: ExpenseCategory[];
   invoices: Invoice[];
   apartments: Apartment[];
@@ -183,4 +224,11 @@ export type PhotoPayload = {
   imageUrl?: string | null;
   description: string;
   photoDate: string;
+};
+
+export type CreateUserPayload = {
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
 };

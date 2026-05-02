@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Camera, ImagePlus } from "lucide-react";
+import { Camera, Download, Eye, ImagePlus } from "lucide-react";
 import { useState } from "react";
 
 import { useDashboard } from "@/components/dashboard/dashboard-shell";
@@ -13,6 +13,7 @@ import {
   formatDate,
 } from "@/components/dashboard/dashboard-ui";
 import { createPhoto } from "@/lib/dashboard-api";
+import type { ConstructionPhoto } from "@/lib/dashboard-types";
 import exterior from "@/assets/exterior-1.jpg";
 import balcony from "@/assets/balcony-1.jpg";
 import interior from "@/assets/interior-1.jpg";
@@ -27,6 +28,10 @@ const fallbackImages = [exterior, balcony, interior, landscape];
 function ProgressPage() {
   const { data, saving, runMutation } = useDashboard();
   const [modalOpen, setModalOpen] = useState(false);
+  const [previewing, setPreviewing] = useState<{
+    photo: ConstructionPhoto;
+    url: string;
+  } | null>(null);
 
   async function closeAfter(action: () => Promise<boolean>) {
     const ok = await action();
@@ -48,26 +53,52 @@ function ProgressPage() {
         <Panel>
           <PanelHeader eyebrow="Gallery" title="Fotot e fundit" icon={Camera} />
           <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
-            {data.constructionPhotos.map((photo, index) => (
-              <article
-                key={photo.id}
-                className="overflow-hidden rounded-md border border-[#ded7c9] bg-[#fbfaf7]"
-              >
-                <div className="aspect-[4/3] bg-[#ebe3d6]">
-                  <img
-                    src={photo.imageUrl || fallbackImages[index % fallbackImages.length]}
-                    alt={photo.description}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <p className="line-clamp-2 text-sm font-medium leading-6">{photo.description}</p>
-                  <p className="mt-2 text-xs text-zinc-500">
-                    {formatDate(photo.photoDate)} · {photo.apartmentCode ?? "Projekt"}
-                  </p>
-                </div>
-              </article>
-            ))}
+            {data.constructionPhotos.map((photo, index) => {
+              const previewUrl = photo.imageUrl || fallbackImages[index % fallbackImages.length];
+
+              return (
+                <article
+                  key={photo.id}
+                  className="overflow-hidden rounded-md border border-[#ded7c9] bg-[#fbfaf7]"
+                >
+                  <div className="group relative aspect-[4/3] bg-[#ebe3d6]">
+                    <img
+                      src={previewUrl}
+                      alt={photo.description}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-x-3 top-3 flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewing({ photo, url: previewUrl })}
+                        className="inline-flex size-9 items-center justify-center rounded-md bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white"
+                        aria-label={`Preview ${photo.description}`}
+                        title="Preview"
+                      >
+                        <Eye className="size-4" />
+                      </button>
+                      <a
+                        href={previewUrl}
+                        download
+                        className="inline-flex size-9 items-center justify-center rounded-md bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white"
+                        aria-label={`Download ${photo.description}`}
+                        title="Download"
+                      >
+                        <Download className="size-4" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="line-clamp-2 text-sm font-medium leading-6">
+                      {photo.description}
+                    </p>
+                    <p className="mt-2 text-xs text-zinc-500">
+                      {formatDate(photo.photoDate)} · {photo.apartmentCode ?? "Projekt"}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </Panel>
 
@@ -96,6 +127,39 @@ function ProgressPage() {
           saving={saving}
           onSubmit={(payload) => void closeAfter(() => runMutation(() => createPhoto(payload)))}
         />
+      </DashboardModal>
+
+      <DashboardModal
+        title={previewing ? `Foto progresi - ${formatDate(previewing.photo.photoDate)}` : "Preview"}
+        open={!!previewing}
+        onClose={() => setPreviewing(null)}
+      >
+        {previewing && (
+          <div className="grid gap-4">
+            <img
+              src={previewing.url}
+              alt={previewing.photo.description}
+              className="max-h-[68vh] w-full rounded-md border border-[#ded7c9] bg-white object-contain"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-zinc-600">
+                <p className="font-medium text-zinc-950">{previewing.photo.description}</p>
+                <p>
+                  {formatDate(previewing.photo.photoDate)} ·{" "}
+                  {previewing.photo.apartmentCode ?? "Projekt"}
+                </p>
+              </div>
+              <a
+                href={previewing.url}
+                download
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#ded7c9] bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-[#f8f4ec]"
+              >
+                <Download className="size-4" />
+                Download
+              </a>
+            </div>
+          </div>
+        )}
       </DashboardModal>
     </>
   );

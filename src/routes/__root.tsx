@@ -79,14 +79,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isDashboard = pathname.startsWith("/dashboard");
+  const hideSiteChrome = isDashboard || pathname === "/login" || pathname === "/";
 
   return (
     <>
-      {!isDashboard && <SiteHeader />}
-      <main className={isDashboard ? "" : "pt-28 md:pt-32"}>
+      {!hideSiteChrome && <SiteHeader />}
+      <main className={hideSiteChrome ? "" : "pt-28 md:pt-32"}>
         <Outlet />
       </main>
-      {!isDashboard && <SiteFooter />}
+      {!hideSiteChrome && <SiteFooter />}
     </>
   );
 }

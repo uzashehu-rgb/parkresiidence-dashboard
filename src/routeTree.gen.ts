@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResidencesRouteImport } from './routes/residences'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -17,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardUsersRouteImport } from './routes/dashboard.users'
 import { Route as DashboardProgressRouteImport } from './routes/dashboard.progress'
 import { Route as DashboardPaymentsRouteImport } from './routes/dashboard.payments'
 import { Route as DashboardInvoicesRouteImport } from './routes/dashboard.invoices'
@@ -28,6 +30,11 @@ import { Route as DashboardApartmentsRouteImport } from './routes/dashboard.apar
 const ResidencesRoute = ResidencesRouteImport.update({
   id: '/residences',
   path: '/residences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocationRoute = LocationRouteImport.update({
@@ -63,6 +70,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardUsersRoute = DashboardUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardProgressRoute = DashboardProgressRouteImport.update({
@@ -108,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
+  '/login': typeof LoginRoute
   '/residences': typeof ResidencesRoute
   '/dashboard/apartments': typeof DashboardApartmentsRoute
   '/dashboard/audit': typeof DashboardAuditRoute
@@ -116,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -124,6 +138,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
+  '/login': typeof LoginRoute
   '/residences': typeof ResidencesRoute
   '/dashboard/apartments': typeof DashboardApartmentsRoute
   '/dashboard/audit': typeof DashboardAuditRoute
@@ -132,6 +147,7 @@ export interface FileRoutesByTo {
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -142,6 +158,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/location': typeof LocationRoute
+  '/login': typeof LoginRoute
   '/residences': typeof ResidencesRoute
   '/dashboard/apartments': typeof DashboardApartmentsRoute
   '/dashboard/audit': typeof DashboardAuditRoute
@@ -150,6 +167,7 @@ export interface FileRoutesById {
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/progress': typeof DashboardProgressRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -161,6 +179,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gallery'
     | '/location'
+    | '/login'
     | '/residences'
     | '/dashboard/apartments'
     | '/dashboard/audit'
@@ -169,6 +188,7 @@ export interface FileRouteTypes {
     | '/dashboard/invoices'
     | '/dashboard/payments'
     | '/dashboard/progress'
+    | '/dashboard/users'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -177,6 +197,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/gallery'
     | '/location'
+    | '/login'
     | '/residences'
     | '/dashboard/apartments'
     | '/dashboard/audit'
@@ -185,6 +206,7 @@ export interface FileRouteTypes {
     | '/dashboard/invoices'
     | '/dashboard/payments'
     | '/dashboard/progress'
+    | '/dashboard/users'
     | '/dashboard'
   id:
     | '__root__'
@@ -194,6 +216,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gallery'
     | '/location'
+    | '/login'
     | '/residences'
     | '/dashboard/apartments'
     | '/dashboard/audit'
@@ -202,6 +225,7 @@ export interface FileRouteTypes {
     | '/dashboard/invoices'
     | '/dashboard/payments'
     | '/dashboard/progress'
+    | '/dashboard/users'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -212,6 +236,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   GalleryRoute: typeof GalleryRoute
   LocationRoute: typeof LocationRoute
+  LoginRoute: typeof LoginRoute
   ResidencesRoute: typeof ResidencesRoute
 }
 
@@ -222,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/residences'
       fullPath: '/residences'
       preLoaderRoute: typeof ResidencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/location': {
@@ -271,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/users': {
+      id: '/dashboard/users'
+      path: '/users'
+      fullPath: '/dashboard/users'
+      preLoaderRoute: typeof DashboardUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/progress': {
@@ -333,6 +372,7 @@ interface DashboardRouteChildren {
   DashboardInvoicesRoute: typeof DashboardInvoicesRoute
   DashboardPaymentsRoute: typeof DashboardPaymentsRoute
   DashboardProgressRoute: typeof DashboardProgressRoute
+  DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -344,6 +384,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInvoicesRoute: DashboardInvoicesRoute,
   DashboardPaymentsRoute: DashboardPaymentsRoute,
   DashboardProgressRoute: DashboardProgressRoute,
+  DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
@@ -358,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   GalleryRoute: GalleryRoute,
   LocationRoute: LocationRoute,
+  LoginRoute: LoginRoute,
   ResidencesRoute: ResidencesRoute,
 }
 export const routeTree = rootRouteImport

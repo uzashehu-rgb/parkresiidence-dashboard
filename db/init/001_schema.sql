@@ -86,6 +86,28 @@ create table if not exists construction_photos (
   created_at timestamptz not null default now()
 );
 
+create table if not exists app_users (
+  id bigserial primary key,
+  full_name text not null,
+  email text not null unique,
+  role text not null default 'sales' check (role in ('super_admin', 'sales')),
+  password_hash text not null,
+  is_active boolean not null default true,
+  created_by bigint references app_users(id) on delete set null,
+  last_login_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists app_sessions (
+  id bigserial primary key,
+  user_id bigint not null references app_users(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  last_used_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
 create table if not exists activity_logs (
   id bigserial primary key,
   entity_type text not null,
@@ -102,4 +124,7 @@ create index if not exists apartment_clients_apartment_idx on apartment_clients(
 create index if not exists payments_client_date_idx on payments(client_id, payment_date desc);
 create index if not exists payment_schedules_due_status_idx on payment_schedules(due_date, status);
 create index if not exists construction_photos_project_date_idx on construction_photos(project_id, photo_date desc);
+create index if not exists app_users_role_idx on app_users(role);
+create index if not exists app_sessions_user_idx on app_sessions(user_id);
+create index if not exists app_sessions_expires_idx on app_sessions(expires_at);
 create index if not exists activity_logs_created_idx on activity_logs(created_at desc);

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Upload } from "lucide-react";
+import { useId, useState } from "react";
+import { Download, Eye, Upload, X } from "lucide-react";
 
 import type {
   Apartment,
@@ -27,6 +27,133 @@ import {
   today,
 } from "./dashboard-ui";
 
+function getFileName(value: string) {
+  if (!value) return "";
+  if (value.startsWith("data:")) return "uploaded-image";
+
+  try {
+    const url = new URL(value);
+    return decodeURIComponent(url.pathname.split("/").filter(Boolean).at(-1) ?? "uploaded-image");
+  } catch {
+    return value.split("/").filter(Boolean).at(-1) ?? "uploaded-image";
+  }
+}
+
+function UploadField({
+  label,
+  hint,
+  imageUrl,
+  fileName,
+  onFileChange,
+  onClear,
+}: {
+  label: string;
+  hint: string;
+  imageUrl: string;
+  fileName: string;
+  onFileChange: (file: File | undefined) => Promise<void> | void;
+  onClear: () => void;
+}) {
+  const inputId = useId();
+  const [dragActive, setDragActive] = useState(false);
+
+  function handleFiles(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    void onFileChange(file);
+    setDragActive(false);
+  }
+
+  return (
+    <div className="grid gap-3">
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(event) => handleFiles(event.currentTarget.files)}
+      />
+      <label
+        htmlFor={inputId}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          setDragActive(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          handleFiles(event.dataTransfer.files);
+        }}
+        className={`grid cursor-pointer gap-2 rounded-md border border-dashed px-4 py-4 text-sm transition ${
+          dragActive
+            ? "border-[#8f6a2e] bg-[#fbf6eb] text-[#7b5a16]"
+            : "border-[#cfc4b2] bg-white text-zinc-600"
+        }`}
+      >
+        <span className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2">
+            <Upload className="size-4" />
+            {label}
+          </span>
+          <span className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+            Drag & drop
+          </span>
+        </span>
+        <span className="text-xs text-zinc-500">{hint}</span>
+      </label>
+
+      {imageUrl && (
+        <div className="overflow-hidden rounded-md border border-[#ded7c9] bg-white">
+          <img src={imageUrl} alt={fileName || label} className="max-h-56 w-full object-cover" />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ebe3d6] px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-zinc-900">
+                {fileName || "uploaded-image"}
+              </p>
+              <p className="text-xs text-zinc-500">Preview e gatshme per ruajtje</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={imageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#ded7c9] px-3 text-sm font-medium text-zinc-700 transition hover:bg-[#f8f4ec]"
+              >
+                <Eye className="size-4" />
+                Preview
+              </a>
+              <a
+                href={imageUrl}
+                download={fileName || undefined}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#ded7c9] px-3 text-sm font-medium text-zinc-700 transition hover:bg-[#f8f4ec]"
+              >
+                <Download className="size-4" />
+                Download
+              </a>
+              <button
+                type="button"
+                onClick={onClear}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#f0d4d1] text-red-600 transition hover:bg-red-50"
+                aria-label="Hiq foton"
+                title="Hiq foton"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InvoiceForm({
   categories,
   initial,
@@ -45,12 +172,13 @@ export function InvoiceForm({
     supplier: initial?.supplier ?? "",
     description: initial?.description ?? "",
     imageUrl: initial?.imageUrl ?? "",
+    fileName: getFileName(initial?.imageUrl ?? ""),
   });
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
     const imageUrl = await fileToDataUrl(file);
-    setForm((current) => ({ ...current, imageUrl }));
+    setForm((current) => ({ ...current, imageUrl, fileName: file.name }));
   }
 
   return (
@@ -119,25 +247,14 @@ export function InvoiceForm({
           className={`${fieldClass} min-h-24 py-3`}
         />
       </Field>
-      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-[#cfc4b2] bg-white px-4 py-4 text-sm text-zinc-600">
-        <span className="flex items-center gap-2">
-          <Upload className="size-4" />
-          Upload foto te fatures
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={(event) => void handleFile(event.currentTarget.files?.[0])}
-        />
-      </label>
-      {form.imageUrl && (
-        <img
-          src={form.imageUrl}
-          alt="Invoice preview"
-          className="max-h-44 rounded-md object-cover"
-        />
-      )}
+      <UploadField
+        label="Upload foto te fatures"
+        hint="Kliko ose lesho fotografine ketu. Fatura do te kete preview dhe download pasi te ruhet."
+        imageUrl={form.imageUrl}
+        fileName={form.fileName}
+        onFileChange={handleFile}
+        onClear={() => setForm((current) => ({ ...current, imageUrl: "", fileName: "" }))}
+      />
       <SubmitButton saving={saving} label={initial ? "Ruaj ndryshimet" : "Shto fature"} />
     </form>
   );
@@ -509,6 +626,7 @@ export function PhotoForm({
   const [form, setForm] = useState({
     apartmentId: "",
     imageUrl: "",
+    fileName: "",
     description: "",
     photoDate: today(),
   });
@@ -516,7 +634,7 @@ export function PhotoForm({
   async function handleFile(file: File | undefined) {
     if (!file) return;
     const imageUrl = await fileToDataUrl(file);
-    setForm((current) => ({ ...current, imageUrl }));
+    setForm((current) => ({ ...current, imageUrl, fileName: file.name }));
   }
 
   return (
@@ -565,25 +683,14 @@ export function PhotoForm({
           className={`${fieldClass} min-h-24 py-3`}
         />
       </Field>
-      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-[#cfc4b2] bg-white px-4 py-4 text-sm text-zinc-600">
-        <span className="flex items-center gap-2">
-          <Upload className="size-4" />
-          Upload foto ndertimi
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          onChange={(event) => void handleFile(event.currentTarget.files?.[0])}
-        />
-      </label>
-      {form.imageUrl && (
-        <img
-          src={form.imageUrl}
-          alt="Progress preview"
-          className="max-h-48 rounded-md object-cover"
-        />
-      )}
+      <UploadField
+        label="Upload foto ndertimi"
+        hint="Kliko ose lesho fotografine ketu. Vetem imazhet pranohen."
+        imageUrl={form.imageUrl}
+        fileName={form.fileName}
+        onFileChange={handleFile}
+        onClear={() => setForm((current) => ({ ...current, imageUrl: "", fileName: "" }))}
+      />
       <SubmitButton saving={saving} label="Shto foto" />
     </form>
   );

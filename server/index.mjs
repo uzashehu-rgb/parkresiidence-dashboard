@@ -1,5 +1,5 @@
 import http from "node:http";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -10,6 +10,10 @@ const PORT = Number(process.env.API_PORT ?? 8787);
 const DATABASE_URL =
   process.env.DATABASE_URL ?? "postgres://residence:residence@127.0.0.1:54329/residence_explorer";
 const PUBLIC_API_ORIGIN = toOrigin(process.env.PUBLIC_API_ORIGIN);
+const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30);
+const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "januz.shehu@parkresidence.co";
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "parkresidence-26";
+const DEFAULT_ADMIN_NAME = process.env.ADMIN_NAME ?? "Januz Shehu";
 const UPLOADS_ROOT = path.resolve(
   process.env.UPLOAD_DIR ?? path.join(process.cwd(), "storage", "uploads"),
 );
@@ -34,12 +38,14 @@ const extensionTypes = {
   ".webp": "image/webp",
 };
 
+const USER_ROLES = ["super_admin", "sales"];
+
 const pool = new Pool({ connectionString: DATABASE_URL });
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": process.env.CLIENT_ORIGIN ?? "*",
   "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 await mkdir(UPLOADS_ROOT, { recursive: true });
@@ -109,6 +115,13 @@ function requiredDate(payload, key) {
   return value;
 }
 
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function normalizeStatus(status) {
   const value = toText(status) || "available";
   if (!["available", "reserved", "sold"].includes(value)) {
@@ -123,6 +136,134 @@ function normalizeLayoutShape(layoutShape) {
     throw new Error("layoutShape must be standard, corner, studio, or penthouse");
   }
   return value;
+}
+
+function normalizeEmail(value) {
+  const email = toText(value).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("email must be valid");
+  }
+  return email;
+}
+
+function normalizeRole(role) {
+  const value = toText(role) || "sales";
+  if (!USER_ROLES.includes(value)) {
+    throw new Error(`role must be one of: ${USER_ROLES.join(", ")}`);
+  }
+  return value;
+}
+
+function hashPassword(password) {
+  const value = toText(password);
+  if (value.length < 10) {
+    throw new Error("password must be at least 10 characters");
+  }
+
+  const salt = randomBytes(16);
+  const hash = scryptSync(value, salt, 64);
+  return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
+}
+
+function verifyPassword(password, passwordHash) {
+  const [algorithm, saltHex, hashHex] = String(passwordHash).split("$");
+  if (algorithm !== "scrypt" || !saltHex || !hashHex) return false;
+
+  const salt = Buffer.from(saltHex, "hex");
+  const expectedHash = Buffer.from(hashHex, "hex");
+  const actualHash = scryptSync(toText(password), salt, expectedHash.length);
+  return timingSafeEqual(actualHash, expectedHash);
+}
+
+function hashSessionToken(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function createSessionToken() {
+  return randomBytes(32).toString("hex");
+}
+
+function getSessionExpiry() {
+  const safeTtlDays =
+    Number.isFinite(SESSION_TTL_DAYS) && SESSION_TTL_DAYS > 0 ? SESSION_TTL_DAYS : 30;
+  return new Date(Date.now() + safeTtlDays * 24 * 60 * 60 * 1000);
+}
+
+function getBearerToken(req) {
+  const header = req.headers.authorization ?? "";
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  return match?.[1]?.trim() ?? null;
+}
+
+function getUserPermissions(user) {
+  const isSuperAdmin = user.role === "super_admin";
+  return {
+    canViewOverview: isSuperAdmin,
+    canViewCharts: isSuperAdmin,
+    canViewInvoices: isSuperAdmin,
+    canViewApartments: true,
+    canCreateApartments: isSuperAdmin,
+    canEditApartments: true,
+    canViewClients: isSuperAdmin,
+    canViewPayments: isSuperAdmin,
+    canViewProgress: isSuperAdmin,
+    canViewAudit: isSuperAdmin,
+    canManageUsers: isSuperAdmin,
+  };
+}
+
+function getUserHomeRoute(user) {
+  return user.role === "sales" ? "/dashboard/apartments" : "/dashboard";
+}
+
+function getAllowedDashboardRoutes(user) {
+  const permissions = getUserPermissions(user);
+  const routes = [];
+
+  if (permissions.canViewOverview) routes.push("/dashboard");
+  if (permissions.canViewCharts) routes.push("/dashboard/charts");
+  if (permissions.canViewInvoices) routes.push("/dashboard/invoices");
+  if (permissions.canViewApartments) routes.push("/dashboard/apartments");
+  if (permissions.canViewClients) routes.push("/dashboard/clients");
+  if (permissions.canViewPayments) routes.push("/dashboard/payments");
+  if (permissions.canViewProgress) routes.push("/dashboard/progress");
+  if (permissions.canViewAudit) routes.push("/dashboard/audit");
+  if (permissions.canManageUsers) routes.push("/dashboard/users");
+
+  return routes;
+}
+
+function canAccessDashboardRoute(user, pathname) {
+  const normalizedPath = pathname === "/dashboard/" ? "/dashboard" : pathname;
+
+  return getAllowedDashboardRoutes(user).some((route) => {
+    if (route === "/dashboard") {
+      return normalizedPath === "/dashboard";
+    }
+
+    return normalizedPath === route || normalizedPath.startsWith(`${route}/`);
+  });
+}
+
+function serializeUser(user) {
+  return {
+    id: Number(user.id),
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    isActive: Boolean(user.isActive),
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt ?? null,
+  };
+}
+
+function buildViewer(user) {
+  return {
+    user: serializeUser(user),
+    permissions: getUserPermissions(user),
+    allowedRoutes: getAllowedDashboardRoutes(user),
+    homeRoute: getUserHomeRoute(user),
+  };
 }
 
 async function readBody(req) {
@@ -343,6 +484,253 @@ async function logActivity(client, entityType, entityId, action, description) {
   );
 }
 
+async function ensureAuthSchema() {
+  await pool.query(`
+    create table if not exists app_users (
+      id bigserial primary key,
+      full_name text not null,
+      email text not null unique,
+      role text not null default 'sales' check (role in ('super_admin', 'sales')),
+      password_hash text not null,
+      is_active boolean not null default true,
+      created_by bigint references app_users(id) on delete set null,
+      last_login_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await pool.query(`
+    create table if not exists app_sessions (
+      id bigserial primary key,
+      user_id bigint not null references app_users(id) on delete cascade,
+      token_hash text not null unique,
+      expires_at timestamptz not null,
+      last_used_at timestamptz not null default now(),
+      created_at timestamptz not null default now()
+    )
+  `);
+
+  await pool.query(`create index if not exists app_users_role_idx on app_users(role)`);
+  await pool.query(`create index if not exists app_sessions_user_idx on app_sessions(user_id)`);
+  await pool.query(
+    `create index if not exists app_sessions_expires_idx on app_sessions(expires_at)`,
+  );
+}
+
+async function ensureDefaultAdmin() {
+  const email = normalizeEmail(DEFAULT_ADMIN_EMAIL);
+  const current = await pool.query(
+    `select id::int, role, is_active as "isActive"
+     from app_users
+     where email = $1`,
+    [email],
+  );
+
+  if (!current.rows[0]) {
+    await pool.query(
+      `insert into app_users (full_name, email, role, password_hash, is_active)
+       values ($1, $2, 'super_admin', $3, true)`,
+      [toText(DEFAULT_ADMIN_NAME) || "Super Admin", email, hashPassword(DEFAULT_ADMIN_PASSWORD)],
+    );
+    return;
+  }
+
+  if (current.rows[0].role !== "super_admin" || !current.rows[0].isActive) {
+    await pool.query(
+      `update app_users
+       set role = 'super_admin',
+           is_active = true,
+           updated_at = now()
+       where id = $1`,
+      [current.rows[0].id],
+    );
+  }
+}
+
+async function ensureBootstrapState() {
+  await ensureAuthSchema();
+  await pool.query(`delete from app_sessions where expires_at <= now()`);
+  await ensureDefaultAdmin();
+}
+
+async function findAuthenticatedUser(req) {
+  const token = getBearerToken(req);
+  if (!token) {
+    throw new HttpError(401, "Authentication required");
+  }
+
+  const tokenHash = hashSessionToken(token);
+  const result = await pool.query(
+    `select
+       s.id::int as "sessionId",
+       s.expires_at as "expiresAt",
+       u.id::int as id,
+       u.full_name as "fullName",
+       u.email,
+       u.role,
+       u.is_active as "isActive",
+       u.created_at as "createdAt",
+       u.last_login_at as "lastLoginAt"
+     from app_sessions s
+     join app_users u on u.id = s.user_id
+     where s.token_hash = $1
+     limit 1`,
+    [tokenHash],
+  );
+
+  const session = result.rows[0];
+  if (!session) {
+    throw new HttpError(401, "Session expired. Please sign in again.");
+  }
+
+  if (!session.isActive) {
+    await pool.query(`delete from app_sessions where id = $1`, [session.sessionId]);
+    throw new HttpError(403, "This user is inactive.");
+  }
+
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    await pool.query(`delete from app_sessions where id = $1`, [session.sessionId]);
+    throw new HttpError(401, "Session expired. Please sign in again.");
+  }
+
+  await pool.query(`update app_sessions set last_used_at = now() where id = $1`, [
+    session.sessionId,
+  ]);
+  return session;
+}
+
+function requireSuperAdmin(user) {
+  if (user.role !== "super_admin") {
+    throw new HttpError(403, "You do not have access to this area.");
+  }
+}
+
+function requireApartmentAccess(user) {
+  if (!getUserPermissions(user).canViewApartments) {
+    throw new HttpError(403, "You do not have access to apartments.");
+  }
+}
+
+async function loginUser(payload) {
+  const email = normalizeEmail(payload.email);
+  const password = requiredText(payload, "password");
+  const result = await pool.query(
+    `select
+       id::int,
+       full_name as "fullName",
+       email,
+       role,
+       password_hash as "passwordHash",
+       is_active as "isActive",
+       created_at as "createdAt",
+       last_login_at as "lastLoginAt"
+     from app_users
+     where email = $1
+     limit 1`,
+    [email],
+  );
+
+  const user = result.rows[0];
+  if (!user || !user.isActive || !verifyPassword(password, user.passwordHash)) {
+    throw new HttpError(401, "Email or password is incorrect.");
+  }
+
+  const sessionToken = createSessionToken();
+  const tokenHash = hashSessionToken(sessionToken);
+  const expiresAt = getSessionExpiry();
+
+  await withTransaction(async (client) => {
+    await client.query(
+      `insert into app_sessions (user_id, token_hash, expires_at)
+       values ($1, $2, $3)`,
+      [user.id, tokenHash, expiresAt],
+    );
+    await client.query(
+      `update app_users
+       set last_login_at = now(),
+           updated_at = now()
+       where id = $1`,
+      [user.id],
+    );
+  });
+
+  return {
+    sessionToken,
+    ...buildViewer({
+      ...user,
+      lastLoginAt: new Date().toISOString(),
+    }),
+  };
+}
+
+async function logoutUser(req) {
+  const token = getBearerToken(req);
+  if (token) {
+    await pool.query(`delete from app_sessions where token_hash = $1`, [hashSessionToken(token)]);
+  }
+
+  return { ok: true };
+}
+
+async function listUsers() {
+  const result = await pool.query(
+    `select
+       u.id::int,
+       u.full_name as "fullName",
+       u.email,
+       u.role,
+       u.is_active as "isActive",
+       u.created_at as "createdAt",
+       u.last_login_at as "lastLoginAt",
+       creator.full_name as "createdByName"
+     from app_users u
+     left join app_users creator on creator.id = u.created_by
+     order by
+       case when u.role = 'super_admin' then 0 else 1 end,
+       u.created_at asc,
+       u.id asc`,
+  );
+
+  return result.rows.map((row) => ({
+    ...serializeUser(row),
+    createdByName: row.createdByName ?? null,
+  }));
+}
+
+async function createUser(payload, currentUser) {
+  const fullName = requiredText(payload, "fullName");
+  const email = normalizeEmail(payload.email);
+  const password = requiredText(payload, "password");
+  const role = normalizeRole(payload.role);
+
+  try {
+    await withTransaction(async (client) => {
+      const result = await client.query(
+        `insert into app_users (full_name, email, role, password_hash, is_active, created_by)
+         values ($1, $2, $3, $4, true, $5)
+         returning id::int`,
+        [fullName, email, role, hashPassword(password), currentUser.id],
+      );
+
+      await logActivity(
+        client,
+        "user",
+        result.rows[0].id,
+        "created",
+        `U shtua perdoruesi ${email} me rolin ${role}.`,
+      );
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "23505") {
+      throw new Error("A user with this email already exists.");
+    }
+    throw error;
+  }
+
+  return listUsers();
+}
+
 async function ensureProjectId(client = pool) {
   const current = await client.query(`select id::int from projects order by id limit 1`);
   if (current.rows[0]) return current.rows[0].id;
@@ -355,8 +743,78 @@ async function ensureProjectId(client = pool) {
   return created.rows[0].id;
 }
 
-async function getDashboardPayload(requestOrigin) {
+function createEmptyDashboardAnalytics() {
+  return {
+    expensesByCategory: [],
+    monthlyCashflow: [],
+    clientsWithDebt: [],
+    recentPayments: [],
+  };
+}
+
+async function getDashboardPayload(requestOrigin, viewer) {
   const projectId = await ensureProjectId();
+
+  if (viewer.role === "sales") {
+    const [project, apartments] = await Promise.all([
+      pool.query(
+        `select id::int, name, description, created_at as "createdAt"
+         from projects
+         where id = $1`,
+        [projectId],
+      ),
+      pool.query(
+        `select
+          id::int,
+          project_id::int as "projectId",
+          code,
+          floor,
+          area::float as area,
+          price::float as price,
+          status,
+          coalesce(layout_shape, 'standard') as "layoutShape",
+          description,
+          created_at as "createdAt"
+         from apartments
+         where project_id = $1
+         order by code`,
+        [projectId],
+      ),
+    ]);
+
+    const apartmentRows = apartments.rows;
+    const statusCounts = apartmentRows.reduce(
+      (acc, row) => {
+        acc[row.status] += 1;
+        return acc;
+      },
+      { available: 0, reserved: 0, sold: 0 },
+    );
+
+    return {
+      project: project.rows[0],
+      viewer: buildViewer(viewer),
+      categories: [],
+      invoices: [],
+      apartments: apartmentRows,
+      clients: [],
+      payments: [],
+      paymentSchedules: [],
+      constructionPhotos: [],
+      activityLogs: [],
+      summary: {
+        totalExpenses: 0,
+        totalPayments: 0,
+        currentProfit: 0,
+        apartmentCount: apartmentRows.length,
+        availableApartments: statusCounts.available,
+        reservedApartments: statusCounts.reserved,
+        soldApartments: statusCounts.sold,
+        overduePayments: 0,
+      },
+      analytics: createEmptyDashboardAnalytics(),
+    };
+  }
 
   const [
     project,
@@ -562,6 +1020,7 @@ async function getDashboardPayload(requestOrigin) {
 
   return {
     project: project.rows[0],
+    viewer: buildViewer(viewer),
     categories: categories.rows,
     invoices: invoiceRows,
     apartments: apartmentRows,
@@ -589,7 +1048,7 @@ async function getDashboardPayload(requestOrigin) {
   };
 }
 
-async function createInvoice(payload, requestOrigin) {
+async function createInvoice(payload, requestOrigin, currentUser) {
   const imageAsset = await prepareImageUrl(payload.imageUrl, {
     bucket: "invoices",
     requestOrigin,
@@ -625,10 +1084,10 @@ async function createInvoice(payload, requestOrigin) {
     throw error;
   }
 
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function updateInvoice(id, payload, requestOrigin) {
+async function updateInvoice(id, payload, requestOrigin, currentUser) {
   const current = await pool.query(`select image_url from invoices where id = $1`, [id]);
   if (!current.rows[0]) throw new Error("Invoice not found");
 
@@ -670,10 +1129,10 @@ async function updateInvoice(id, payload, requestOrigin) {
     await removeStoredUpload(imageAsset.removeAfterCommit);
   }
 
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function deleteInvoice(id, requestOrigin) {
+async function deleteInvoice(id, requestOrigin, currentUser) {
   const current = await pool.query(`select image_url from invoices where id = $1`, [id]);
   const imageUrl = current.rows[0]?.image_url ?? null;
 
@@ -686,10 +1145,10 @@ async function deleteInvoice(id, requestOrigin) {
     await removeStoredUpload(imageUrl);
   }
 
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function createApartment(payload, requestOrigin) {
+async function createApartment(payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const projectId = await ensureProjectId(client);
     const code = requiredText(payload, "code").toUpperCase();
@@ -708,10 +1167,10 @@ async function createApartment(payload, requestOrigin) {
     );
     await logActivity(client, "apartment", result.rows[0].id, "created", `U shtua banesa ${code}.`);
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function updateApartment(id, payload, requestOrigin) {
+async function updateApartment(id, payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const code = requiredText(payload, "code").toUpperCase();
     const floor = requiredNumber(payload, "floor");
@@ -741,10 +1200,10 @@ async function updateApartment(id, payload, requestOrigin) {
       `${code} u ndryshua ne ${status}.`,
     );
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function createClient(payload, requestOrigin) {
+async function createClient(payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const fullName = requiredText(payload, "fullName");
     const phone = toText(payload.phone);
@@ -777,10 +1236,10 @@ async function createClient(payload, requestOrigin) {
 
     await logActivity(client, "client", clientId, "created", `U shtua klienti ${fullName}.`);
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function updateClient(id, payload, requestOrigin) {
+async function updateClient(id, payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const fullName = requiredText(payload, "fullName");
     const phone = toText(payload.phone);
@@ -840,10 +1299,10 @@ async function updateClient(id, payload, requestOrigin) {
 
     await logActivity(client, "client", id, "updated", `U perditesua klienti ${fullName}.`);
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function deleteClient(id, requestOrigin) {
+async function deleteClient(id, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const linkedApartments = await client.query(
       `select distinct apartment_id::int as id
@@ -873,10 +1332,10 @@ async function deleteClient(id, requestOrigin) {
 
     await logActivity(client, "client", id, "deleted", `U fshi klienti ${fullName}.`);
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function createPayment(payload, requestOrigin) {
+async function createPayment(payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const apartmentId = requiredNumber(payload, "apartmentId");
     const clientId = requiredNumber(payload, "clientId");
@@ -899,10 +1358,10 @@ async function createPayment(payload, requestOrigin) {
       `U regjistrua pagese ne vlere ${amount.toLocaleString("en-US")}.`,
     );
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function updatePayment(id, payload, requestOrigin) {
+async function updatePayment(id, payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const apartmentId = requiredNumber(payload, "apartmentId");
     const clientId = requiredNumber(payload, "clientId");
@@ -930,18 +1389,18 @@ async function updatePayment(id, payload, requestOrigin) {
       `U perditesua pagesa ne vlere ${amount.toLocaleString("en-US")}.`,
     );
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function deletePayment(id, requestOrigin) {
+async function deletePayment(id, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     await client.query(`delete from payments where id = $1`, [id]);
     await logActivity(client, "payment", id, "deleted", "U fshi nje pagese nga historiku.");
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function createSchedule(payload, requestOrigin) {
+async function createSchedule(payload, requestOrigin, currentUser) {
   await withTransaction(async (client) => {
     const apartmentId = requiredNumber(payload, "apartmentId");
     const clientId = requiredNumber(payload, "clientId");
@@ -967,10 +1426,10 @@ async function createSchedule(payload, requestOrigin) {
       "U shtua afat pagese.",
     );
   });
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
-async function createPhoto(payload, requestOrigin) {
+async function createPhoto(payload, requestOrigin, currentUser) {
   const imageAsset = await prepareImageUrl(payload.imageUrl, {
     bucket: "progress",
     requestOrigin,
@@ -1007,7 +1466,7 @@ async function createPhoto(payload, requestOrigin) {
     throw error;
   }
 
-  return getDashboardPayload(requestOrigin);
+  return getDashboardPayload(requestOrigin, currentUser);
 }
 
 function parseId(parts, index = 2) {
@@ -1045,8 +1504,31 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && parts[1] === "auth" && parts[2] === "login") {
+      sendJson(res, 200, await loginUser(await readBody(req)));
+      return;
+    }
+
+    const currentUser = await findAuthenticatedUser(req);
+
+    if (req.method === "GET" && parts[1] === "auth" && parts[2] === "session") {
+      sendJson(res, 200, buildViewer(currentUser));
+      return;
+    }
+
+    if (req.method === "POST" && parts[1] === "auth" && parts[2] === "logout") {
+      sendJson(res, 200, await logoutUser(req));
+      return;
+    }
+
     if (req.method === "GET" && parts[1] === "dashboard") {
-      sendJson(res, 200, await getDashboardPayload(url.origin));
+      sendJson(res, 200, await getDashboardPayload(url.origin, currentUser));
+      return;
+    }
+
+    if (req.method === "GET" && parts[1] === "users") {
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, { users: await listUsers() });
       return;
     }
 
@@ -1054,56 +1536,74 @@ const server = http.createServer(async (req, res) => {
       ? await readBody(req)
       : {};
 
+    if (req.method === "POST" && parts[1] === "users") {
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, { users: await createUser(payload, currentUser) });
+      return;
+    }
     if (req.method === "POST" && parts[1] === "invoices") {
-      sendJson(res, 201, await createInvoice(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createInvoice(payload, url.origin, currentUser));
       return;
     }
     if (req.method === "PATCH" && parts[1] === "invoices") {
-      sendJson(res, 200, await updateInvoice(parseId(parts), payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await updateInvoice(parseId(parts), payload, url.origin, currentUser));
       return;
     }
     if (req.method === "DELETE" && parts[1] === "invoices") {
-      sendJson(res, 200, await deleteInvoice(parseId(parts), url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await deleteInvoice(parseId(parts), url.origin, currentUser));
       return;
     }
     if (req.method === "POST" && parts[1] === "apartments") {
-      sendJson(res, 201, await createApartment(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createApartment(payload, url.origin, currentUser));
       return;
     }
     if (req.method === "PATCH" && parts[1] === "apartments") {
-      sendJson(res, 200, await updateApartment(parseId(parts), payload, url.origin));
+      requireApartmentAccess(currentUser);
+      sendJson(res, 200, await updateApartment(parseId(parts), payload, url.origin, currentUser));
       return;
     }
     if (req.method === "POST" && parts[1] === "clients") {
-      sendJson(res, 201, await createClient(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createClient(payload, url.origin, currentUser));
       return;
     }
     if (req.method === "PATCH" && parts[1] === "clients") {
-      sendJson(res, 200, await updateClient(parseId(parts), payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await updateClient(parseId(parts), payload, url.origin, currentUser));
       return;
     }
     if (req.method === "DELETE" && parts[1] === "clients") {
-      sendJson(res, 200, await deleteClient(parseId(parts), url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await deleteClient(parseId(parts), url.origin, currentUser));
       return;
     }
     if (req.method === "POST" && parts[1] === "payments") {
-      sendJson(res, 201, await createPayment(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createPayment(payload, url.origin, currentUser));
       return;
     }
     if (req.method === "PATCH" && parts[1] === "payments") {
-      sendJson(res, 200, await updatePayment(parseId(parts), payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await updatePayment(parseId(parts), payload, url.origin, currentUser));
       return;
     }
     if (req.method === "DELETE" && parts[1] === "payments") {
-      sendJson(res, 200, await deletePayment(parseId(parts), url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 200, await deletePayment(parseId(parts), url.origin, currentUser));
       return;
     }
     if (req.method === "POST" && parts[1] === "payment-schedules") {
-      sendJson(res, 201, await createSchedule(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createSchedule(payload, url.origin, currentUser));
       return;
     }
     if (req.method === "POST" && parts[1] === "photos") {
-      sendJson(res, 201, await createPhoto(payload, url.origin));
+      requireSuperAdmin(currentUser);
+      sendJson(res, 201, await createPhoto(payload, url.origin, currentUser));
       return;
     }
 
@@ -1111,9 +1611,11 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     console.error(message);
-    sendJson(res, 400, { error: message });
+    sendJson(res, error instanceof HttpError ? error.status : 400, { error: message });
   }
 });
+
+await ensureBootstrapState();
 
 server.listen(PORT, HOST, () => {
   console.log(`Residence Explorer API running on http://${HOST}:${PORT}`);

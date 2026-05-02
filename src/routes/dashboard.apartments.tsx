@@ -34,7 +34,7 @@ export const Route = createFileRoute("/dashboard/apartments")({
 });
 
 function ApartmentsPage() {
-  const { data, search, saving, runMutation } = useDashboard();
+  const { data, search, saving, runMutation, viewer } = useDashboard();
   const [status, setStatus] = useState<ApartmentStatus | "all">("all");
   const [floor, setFloor] = useState<number | "all">("all");
   const [shape, setShape] = useState<ApartmentLayoutShape | "all">("all");
@@ -116,7 +116,11 @@ function ApartmentsPage() {
         eyebrow="Banesat"
         title="Inventar i lexueshem dhe vizual."
         description="Kodi, kati, siperfaqja, cmimi dhe statusi per secilen banese."
-        action={<ActionButton icon={Plus} label="Shto banese" onClick={openNew} />}
+        action={
+          viewer.permissions.canCreateApartments ? (
+            <ActionButton icon={Plus} label="Shto banese" onClick={openNew} />
+          ) : undefined
+        }
       />
 
       <Panel>
@@ -188,7 +192,9 @@ function ApartmentsPage() {
                       <button
                         key={apartment.id}
                         type="button"
-                        onClick={() => openEdit(apartment)}
+                        onClick={() => {
+                          if (viewer.permissions.canEditApartments) openEdit(apartment);
+                        }}
                         className={`group relative min-w-0 overflow-hidden rounded-md border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-30px_rgba(41,37,32,0.7)] ${floorTileClass(apartment.layoutShape)} ${statusColors[apartment.status]}`}
                       >
                         <span
@@ -243,9 +249,11 @@ function ApartmentsPage() {
                   <p className="font-semibold tabular-nums">{formatMoney(apartment.price)}</p>
                 </DataCell>
                 <DataCell label="Veprime">
-                  <div className="flex justify-start">
-                    <IconButton icon={Pencil} label="Edito" onClick={() => openEdit(apartment)} />
-                  </div>
+                  {viewer.permissions.canEditApartments ? (
+                    <div className="flex justify-start">
+                      <IconButton icon={Pencil} label="Edito" onClick={() => openEdit(apartment)} />
+                    </div>
+                  ) : null}
                 </DataCell>
               </DataTableRow>
             ))}

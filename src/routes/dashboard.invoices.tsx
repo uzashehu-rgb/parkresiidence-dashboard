@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Filter, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { CalendarDays, Download, Eye, Filter, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useDashboard } from "@/components/dashboard/dashboard-shell";
@@ -38,6 +38,7 @@ function InvoicesPage() {
   const [end, setEnd] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
+  const [previewing, setPreviewing] = useState<Invoice | null>(null);
 
   const months = useMemo(() => {
     return [...new Set(data.invoices.map((invoice) => invoice.invoiceDate.slice(0, 7)))].sort();
@@ -83,6 +84,7 @@ function InvoicesPage() {
     { label: "Kategoria", width: "150px" },
     { label: "Data", width: "130px" },
     { label: "Shuma", width: "150px" },
+    { label: "Dokumenti", width: "190px" },
     { label: "Veprime", width: "104px" },
   ];
 
@@ -170,6 +172,43 @@ function InvoicesPage() {
                     {formatMoney(invoice.amount)}
                   </span>
                 </DataCell>
+                <DataCell label="Dokumenti">
+                  {invoice.imageUrl ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewing(invoice)}
+                        className="group relative overflow-hidden rounded-md border border-[#ded7c9] bg-[#fbfaf7]"
+                        aria-label={`Preview ${invoice.supplier}`}
+                        title="Preview dokumentin"
+                      >
+                        <img
+                          src={invoice.imageUrl}
+                          alt={`Dokumenti i fatures ${invoice.supplier}`}
+                          className="h-11 w-11 object-cover transition group-hover:scale-105"
+                        />
+                      </button>
+                      <div className="flex items-center gap-1">
+                        <IconButton
+                          icon={Eye}
+                          label="Preview"
+                          onClick={() => setPreviewing(invoice)}
+                        />
+                        <a
+                          href={invoice.imageUrl}
+                          download
+                          className="inline-flex size-9 items-center justify-center rounded-md text-zinc-500 transition hover:bg-[#f8f4ec] hover:text-zinc-900"
+                          aria-label={`Download ${invoice.supplier}`}
+                          title="Download"
+                        >
+                          <Download className="size-4" />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-zinc-400">Pa dokument</span>
+                  )}
+                </DataCell>
                 <DataCell label="Veprime">
                   <div className="flex justify-start gap-1">
                     <IconButton icon={Pencil} label="Edito" onClick={() => openEdit(invoice)} />
@@ -231,6 +270,38 @@ function InvoicesPage() {
             )
           }
         />
+      </DashboardModal>
+
+      <DashboardModal
+        title={previewing ? `Dokumenti i fatures - ${previewing.supplier}` : "Preview dokumenti"}
+        open={!!previewing}
+        onClose={() => setPreviewing(null)}
+      >
+        {previewing?.imageUrl && (
+          <div className="grid gap-4">
+            <img
+              src={previewing.imageUrl}
+              alt={`Dokumenti i fatures ${previewing.supplier}`}
+              className="max-h-[68vh] w-full rounded-md border border-[#ded7c9] bg-white object-contain"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-zinc-600">
+                <p className="font-medium text-zinc-950">{previewing.supplier}</p>
+                <p>
+                  {formatDate(previewing.invoiceDate)} · {formatMoney(previewing.amount)}
+                </p>
+              </div>
+              <a
+                href={previewing.imageUrl}
+                download
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#ded7c9] bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-[#f8f4ec]"
+              >
+                <Download className="size-4" />
+                Download
+              </a>
+            </div>
+          </div>
+        )}
       </DashboardModal>
     </>
   );
