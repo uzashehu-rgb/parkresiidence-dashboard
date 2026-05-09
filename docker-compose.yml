@@ -36,6 +36,10 @@ services:
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-*}
       DATABASE_URL: postgresql://${POSTGRES_USER:-residence}:${POSTGRES_PASSWORD:-residence}@db:5432/${POSTGRES_DB:-residence_explorer}
       PUBLIC_API_ORIGIN: ${PUBLIC_API_ORIGIN:-}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-30}
+      ADMIN_NAME: ${ADMIN_NAME:-Januz Shehu}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-januz.shehu@parkresidence.co}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-parkresidence-26}
       UPLOAD_DIR: /app/storage/uploads
     restart: unless-stopped
     volumes:
@@ -43,6 +47,8 @@ services:
 
   db:
     image: postgres:16-alpine
+    ports:
+      - "54329:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-residence_explorer}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-residence}
